@@ -9,7 +9,47 @@ import {
   AlertTriangle,
   MapPin
 } from 'lucide-react';
-import StatsCard from '../components/StatsCard';
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
+
+const StatsCard = ({ title, value, change, icon: Icon, color }) => {
+  const colorClasses = {
+    green: 'bg-green-50 dark:bg-green-900/20 text-green-600 border-green-200 dark:border-green-800',
+    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-200 dark:border-blue-800',
+    purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 border-purple-200 dark:border-purple-800',
+    amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200 dark:border-amber-800'
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          <p className="text-sm text-green-600 dark:text-green-400 mt-1">{change}</p>
+        </div>
+        <div className={`w-12 h-12 rounded-lg border flex items-center justify-center ${colorClasses[color]}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const stats = [
@@ -41,6 +81,45 @@ const Dashboard = () => {
       icon: CheckCircle,
       color: 'green' as const
     }
+  ];
+
+  // Revenue trend data for line chart
+  const revenueData = [
+    { month: 'Jan', revenue: 185000, bookings: 145 },
+    { month: 'Feb', revenue: 192000, bookings: 158 },
+    { month: 'Mar', revenue: 178000, bookings: 142 },
+    { month: 'Apr', revenue: 205000, bookings: 168 },
+    { month: 'May', revenue: 218000, bookings: 175 },
+    { month: 'Jun', revenue: 235000, bookings: 189 },
+    { month: 'Jul', revenue: 247389, bookings: 201 }
+  ];
+
+  // Service distribution data for pie chart
+  const serviceData = [
+    { name: 'Electronics Repair', value: 35, color: '#3B82F6' },
+    { name: 'Home Appliances', value: 28, color: '#10B981' },
+    { name: 'AC Services', value: 22, color: '#8B5CF6' },
+    { name: 'Mobile Repair', value: 15, color: '#F59E0B' }
+  ];
+
+  // Engineer performance data for bar chart
+  const engineerData = [
+    { name: 'Amit S.', completed: 24, rating: 4.8 },
+    { name: 'Vikash Y.', completed: 21, rating: 4.6 },
+    { name: 'Rohit V.', completed: 19, rating: 4.7 },
+    { name: 'Suraj K.', completed: 18, rating: 4.5 },
+    { name: 'Arjun M.', completed: 16, rating: 4.4 }
+  ];
+
+  // Daily bookings trend
+  const dailyBookings = [
+    { day: 'Mon', bookings: 18, completed: 15 },
+    { day: 'Tue', bookings: 22, completed: 19 },
+    { day: 'Wed', bookings: 25, completed: 23 },
+    { day: 'Thu', bookings: 28, completed: 25 },
+    { day: 'Fri', bookings: 32, completed: 28 },
+    { day: 'Sat', bookings: 35, completed: 31 },
+    { day: 'Sun', bookings: 28, completed: 26 }
   ];
 
   const recentBookings = [
@@ -96,6 +175,22 @@ const Dashboard = () => {
     return config[status as keyof typeof config] || config.pending;
   };
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -108,6 +203,155 @@ const Dashboard = () => {
         {stats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* Revenue Trend Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Revenue & Bookings Trend</h3>
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <span className="text-sm text-green-600 font-medium">+12.5% this month</span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis 
+                dataKey="month" 
+                stroke="#6B7280"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="#6B7280"
+                fontSize={12}
+                tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Line 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#3B82F6" 
+                strokeWidth={3}
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Service Distribution Pie Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Service Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={serviceData}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                innerRadius={60}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {serviceData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value) => [`${value}%`, 'Share']}
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+              <Legend 
+                verticalAlign="bottom" 
+                height={36}
+                formatter={(value) => <span className="text-sm text-gray-600 dark:text-gray-400">{value}</span>}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Additional Charts Row */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* Daily Bookings Area Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Weekly Bookings Overview</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={dailyBookings}>
+              <defs>
+                <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.1}/>
+                </linearGradient>
+                <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis dataKey="day" stroke="#6B7280" fontSize={12} />
+              <YAxis stroke="#6B7280" fontSize={12} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area 
+                type="monotone" 
+                dataKey="bookings" 
+                stackId="1"
+                stroke="#8B5CF6" 
+                fillOpacity={1} 
+                fill="url(#colorBookings)"
+                name="New Bookings"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="completed" 
+                stackId="2"
+                stroke="#10B981" 
+                fillOpacity={1} 
+                fill="url(#colorCompleted)"
+                name="Completed"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Top Engineers Performance */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Top Engineers Performance</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={engineerData} layout="horizontal">
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis type="number" stroke="#6B7280" fontSize={12} />
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                stroke="#6B7280" 
+                fontSize={12}
+                width={60}
+              />
+              <Tooltip 
+                content={<CustomTooltip />}
+                formatter={(value, name) => [
+                  name === 'completed' ? `${value} services` : `${value}/5.0`,
+                  name === 'completed' ? 'Completed' : 'Rating'
+                ]}
+              />
+              <Bar 
+                dataKey="completed" 
+                fill="#3B82F6"
+                radius={[0, 4, 4, 0]}
+                name="completed"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
