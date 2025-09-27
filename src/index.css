@@ -1,3 +1,110 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* React Hot Toast CSS Variables for Dark Mode Support */
+:root {
+  --toast-bg: #ffffff;
+  --toast-color: #374151;
+  --toast-border: #e5e7eb;
+}
+
+.dark {
+  --toast-bg: #1f2937;
+  --toast-color: #f9fafb;
+  --toast-border: #374151;
+}
+
+/* Hide All Scrollbars Globally */
+/* Webkit Browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-track {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+::-webkit-scrollbar-corner {
+  display: none;
+}
+
+/* Firefox Scrollbar - Hide completely */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure all elements have no scrollbars */
+div::-webkit-scrollbar,
+section::-webkit-scrollbar,
+main::-webkit-scrollbar,
+article::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+nav::-webkit-scrollbar,
+header::-webkit-scrollbar,
+footer::-webkit-scrollbar,
+ul::-webkit-scrollbar,
+ol::-webkit-scrollbar,
+li::-webkit-scrollbar,
+form::-webkit-scrollbar,
+input::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+select::-webkit-scrollbar,
+table::-webkit-scrollbar,
+tbody::-webkit-scrollbar,
+thead::-webkit-scrollbar,
+tr::-webkit-scrollbar,
+td::-webkit-scrollbar,
+th::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide scrollbars for all custom classes */
+.scrollbar-none,
+.scrollbar-thin,
+.modal-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollbar-none::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar,
+.modal-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom toast styles */
+.react-hot-toast > div {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark .react-hot-toast > div {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}

@@ -1,35 +1,53 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import toast from 'react-hot-toast';
+import { logoutUser } from '../redux/slices/authSlice';
 import { 
   LayoutDashboard, 
   Wrench, 
+  Tag,
   Users, 
   Calendar, 
   UserCheck, 
   CreditCard,
-  Settings,
-  Sun,
-  Moon,
+  Settings, 
+  Sun, 
+  Moon, 
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 
-interface SidebarProps {
-  activeScreen: string;
-  setActiveScreen: (screen: string) => void;
-}
-
-const Sidebar = ({ activeScreen, setActiveScreen }: SidebarProps) => {
+const Sidebar = () => {
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      try {
+        await dispatch(logoutUser()).unwrap();
+        toast.success('Logged out successfully');
+        navigate('/login');
+      } catch (error) {
+        toast.error('Logout failed');
+      }
+    }
+  };
+
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'services', label: 'Services', icon: Wrench },
-    { id: 'engineers', label: 'Engineers', icon: Users },
-    { id: 'bookings', label: 'Bookings', icon: Calendar },
-    { id: 'customers', label: 'Customers', icon: UserCheck },
-    { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { id: 'services', label: 'Services', icon: Wrench, path: '/services' },
+    { id: 'categories', label: 'Categories', icon: Tag, path: '/categories' },
+    { id: 'engineers', label: 'Engineers', icon: Users, path: '/engineers' },
+    { id: 'bookings', label: 'Bookings', icon: Calendar, path: '/bookings' },
+    { id: 'customers', label: 'Customers', icon: UserCheck, path: '/customers' },
+    { id: 'payments', label: 'Payments', icon: CreditCard, path: '/payments' },
   ];
 
   return (
@@ -66,7 +84,9 @@ const Sidebar = ({ activeScreen, setActiveScreen }: SidebarProps) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">Door2fy</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Admin Dashboard</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Welcome, {user?.username || 'Admin'}
+                </p>
               </div>
             </div>
             <button
@@ -85,13 +105,13 @@ const Sidebar = ({ activeScreen, setActiveScreen }: SidebarProps) => {
         <nav className="mt-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeScreen === item.id;
+            const isActive = location.pathname === item.path || (location.pathname === '/' && item.id === 'dashboard');
           
             return (
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveScreen(item.id);
+                  navigate(item.path);
                   setIsMobileOpen(false);
                 }}
                 className={`w-full flex items-center px-6 py-3 text-left transition-all duration-200 ${
@@ -107,7 +127,17 @@ const Sidebar = ({ activeScreen, setActiveScreen }: SidebarProps) => {
           })}
         </nav>
 
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="absolute bottom-6 left-6 right-6 space-y-4">
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-6 py-3 text-left transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 rounded-lg"
+          >
+            <LogOut className="w-5 h-5 mr-3" />
+            <span className="font-medium">Logout</span>
+          </button>
+
+          {/* Help Section */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800">
             <p className="text-sm font-medium text-gray-900 dark:text-white">Need Help?</p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Contact support for assistance</p>

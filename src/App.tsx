@@ -1,43 +1,71 @@
-import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAppSelector } from './redux/hooks';
+import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
+import Login from './screens/Login';
 import Dashboard from './screens/Dashboard';
 import Services from './screens/Services';
+import AddService from './screens/AddService';
+import EditService from './screens/EditService';
+import Categories from './screens/Categories';
+import AddCategory from './screens/AddCategory';
 import Engineers from './screens/Engineers';
 import Bookings from './screens/Bookings';
 import Customers from './screens/Customers';
 import Payments from './screens/Payments';
 
 function App() {
-  const [activeScreen, setActiveScreen] = useState('dashboard');
-
-  const renderScreen = () => {
-    switch (activeScreen) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'services':
-        return <Services />;
-      case 'engineers':
-        return <Engineers />;
-      case 'bookings':
-        return <Bookings />;
-      case 'customers':
-        return <Customers />;
-      case 'payments':
-        return <Payments />;
-      default:
-        return <Dashboard />;
-    }
-  };
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   return (
-    <div className={`flex min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
-    <Sidebar activeScreen={activeScreen} setActiveScreen={setActiveScreen} />
-    <main className="flex-1 ml-64">
-      <div className="p-8">
-        {renderScreen()}
-      </div>
-    </main>
-  </div>
+    <Router>
+      <Routes>
+        {/* Public route - Login */}
+        <Route 
+          path="/login" 
+          element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+          } 
+        />
+        
+        {/* Protected routes */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                
+                {/* Full-screen routes (no sidebar/padding) */}
+                <Route path="/services/add" element={<AddService />} />
+                <Route path="/services/edit/:id" element={<EditService />} />
+                <Route path="/categories/add" element={<AddCategory />} />
+                
+                {/* Standard layout routes (with sidebar) */}
+                <Route path="/*" element={
+                  <div className={`flex min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
+                    <Sidebar />
+                    <main className="flex-1 ml-64">
+                      <div className="p-8">
+                        <Routes>
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/services" element={<Services />} />
+                          <Route path="/categories" element={<Categories />} />
+                          <Route path="/engineers" element={<Engineers />} />
+                          <Route path="/bookings" element={<Bookings />} />
+                          <Route path="/customers" element={<Customers />} />
+                          <Route path="/payments" element={<Payments />} />
+                        </Routes>
+                      </div>
+                    </main>
+                  </div>
+                } />
+              </Routes>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
