@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Grid, List, Edit, Trash2, Image as ImageIcon, Tag, FileText, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchCategories, deleteCategory } from '../redux/slices/servicesSlice';
 import ConfirmModal from '../components/ConfirmModal';
+import EditCategoryModal from '../components/EditCategoryModal';
 
 const Categories = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { categories, loading, actionLoading } = useAppSelector((state) => state.services);
+  const { categories, loading } = useAppSelector((state) => state.services);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<any>(null);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -64,8 +67,16 @@ const Categories = () => {
   };
 
   const handleEditCategory = (categoryId: string) => {
-    // For now, just show a message - you can implement edit later
-    toast.info('Edit category functionality coming soon!');
+    const category = categories.find(cat => cat._id === categoryId);
+    if (category) {
+      setCategoryToEdit(category);
+      setShowEditModal(true);
+    }
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setCategoryToEdit(null);
   };
 
   // Loading skeleton
@@ -375,6 +386,13 @@ const Categories = () => {
           cancelText="Cancel"
           type="danger"
           loading={deleteLoading}
+        />
+
+        {/* Edit Category Modal */}
+        <EditCategoryModal
+          isOpen={showEditModal}
+          onClose={closeEditModal}
+          category={categoryToEdit}
         />
       </div>
     </div>

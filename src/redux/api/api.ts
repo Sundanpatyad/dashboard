@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 
-// const API_URL = 'http://localhost:3000';
- const API_URL = "https://coral-app-57xgb.ondigitalocean.app"
+const API_URL = 'http://localhost:3000';
+//  const API_URL = "https://coral-app-57xgb.ondigitalocean.app"
 
 interface RequestOptions {
   isMultipart?: boolean; // if true, sends multipart/form-data

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Image as ImageIcon, DollarSign, Tag, Type, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Image as ImageIcon, IndianRupee, Tag, Type, FileText, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { createService, fetchCategories } from '../redux/slices/servicesSlice';
@@ -211,11 +211,11 @@ const AddService = () => {
 
               <div className="space-y-2">
                 <label className="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <DollarSign className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
+                  <IndianRupee className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" />
                   Price *
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <input
                     type="number"
                     required

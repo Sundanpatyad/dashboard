@@ -168,6 +168,23 @@ export const createCategory = createAsyncThunk(
   }
 );
 
+export const updateCategory = createAsyncThunk(
+  'services/updateCategory',
+  async ({ id, categoryData }: { id: string; categoryData: FormData }, { rejectWithValue }) => {
+    try {
+      const response = await putData(`/api/services/editCategory/${id}`, categoryData, { isMultipart: true });
+      
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || 'Failed to update category');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update category');
+    }
+  }
+);
+
 export const deleteCategory = createAsyncThunk(
   'services/deleteCategory',
   async (categoryId: string, { rejectWithValue }) => {
@@ -297,6 +314,25 @@ const servicesSlice = createSlice({
         }
       })
       .addCase(createCategory.rejected, (state, action) => {
+        state.actionLoading['category'] = false;
+        state.error = action.payload as string;
+      });
+
+    // Update category
+    builder
+      .addCase(updateCategory.pending, (state) => {
+        state.actionLoading['category'] = true;
+      })
+      .addCase(updateCategory.fulfilled, (state, action) => {
+        state.actionLoading['category'] = false;
+        if (action.payload) {
+          const index = state.categories.findIndex(c => c._id === action.payload._id);
+          if (index !== -1) {
+            state.categories[index] = action.payload;
+          }
+        }
+      })
+      .addCase(updateCategory.rejected, (state, action) => {
         state.actionLoading['category'] = false;
         state.error = action.payload as string;
       });
