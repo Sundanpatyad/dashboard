@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAppSelector } from './redux/hooks';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
@@ -19,6 +20,19 @@ function App() {
 
   return (
     <Router>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--toast-bg, #363636)',
+            color: 'var(--toast-color, #fff)',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+        }}
+      />
       <Routes>
         {/* Public route - Login */}
         <Route 

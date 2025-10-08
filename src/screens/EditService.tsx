@@ -403,6 +403,21 @@ const EditService = () => {
                 Service Features
               </label>
               
+              {/* Features Preview */}
+              {formData.features.some(f => f.trim() !== '') && (
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preview:</p>
+                  <div className="space-y-2">
+                    {formData.features.filter(f => f.trim() !== '').map((feature, index) => (
+                      <div key={index} className="flex items-start">
+                        <span className="text-blue-600 dark:text-blue-400 mr-2 mt-0.5">•</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600 shadow-sm space-y-3">
                 {formData.features.map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3 group">

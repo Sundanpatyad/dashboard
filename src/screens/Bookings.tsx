@@ -1,161 +1,101 @@
-import React, { useState } from 'react';
-import { Search, Filter, Eye, MapPin, Clock, User, Wrench } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Search, Eye, MapPin, Clock, User, Calendar, Phone, Mail } from 'lucide-react';
+import { 
+  getAllBookings, 
+  updateBookingStatus,
+  setStatusFilter,
+  setOrderStatusFilter,
+  setSearchTerm,
+  clearFilters,
+  Booking 
+} from '../redux/slices/bookingSlice';
+import { RootState, AppDispatch } from '../redux/store';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
-const Bookings = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
+const Bookings: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { bookings, loading, error, filters } = useSelector((state: RootState) => state.bookings);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  const bookings = [
-    {
-      id: 'BK-001',
-      customer: {
-        name: 'Rajesh Kumar',
-        phone: '+91 9876543210',
-        email: 'rajesh.kumar@email.com'
-      },
-      service: 'Laptop Repair',
-      issue: 'Screen flickering and slow performance',
-      location: 'Sector 15, Noida, UP',
-      engineer: 'Amit Sharma',
-      status: 'in-progress',
-      priority: 'high',
-      bookingDate: '2024-01-15T10:30:00',
-      scheduledDate: '2024-01-15T14:00:00',
-      amount: '₹1,500',
-      customerLocation: {
-        address: 'Sector 15, Noida, UP',
-        coordinates: { lat: 28.5355, lng: 77.3910 },
-        landmark: 'Near City Center Mall'
-      },
-      estimatedTime: '2-3 hours',
-      progress: 75
-    },
-    {
-      id: 'BK-002',
-      customer: {
-        name: 'Priya Singh',
-        phone: '+91 9876543211',
-        email: 'priya.singh@email.com'
-      },
-      service: 'AC Installation',
-      issue: 'New 1.5 ton split AC installation',
-      location: 'Lajpat Nagar, Delhi',
-      engineer: 'Vikash Yadav',
-      status: 'assigned',
-      priority: 'medium',
-      bookingDate: '2024-01-15T09:15:00',
-      scheduledDate: '2024-01-16T11:00:00',
-      amount: '₹3,500',
-      customerLocation: {
-        address: 'Lajpat Nagar, Delhi',
-        coordinates: { lat: 28.5665, lng: 77.2431 },
-        landmark: 'Near Central Market'
-      },
-      estimatedTime: '4-5 hours',
-      progress: 0
-    },
-    {
-      id: 'BK-003',
-      customer: {
-        name: 'Suresh Gupta',
-        phone: '+91 9876543212',
-        email: 'suresh.gupta@email.com'
-      },
-      service: 'Washing Machine Repair',
-      issue: 'Not draining water properly',
-      location: 'Gurgaon Sector 21, Haryana',
-      engineer: 'Rohit Verma',
-      status: 'completed',
-      priority: 'low',
-      bookingDate: '2024-01-14T16:20:00',
-      scheduledDate: '2024-01-15T10:00:00',
-      amount: '₹800',
-      customerLocation: {
-        address: 'Gurgaon Sector 21, Haryana',
-        coordinates: { lat: 28.4595, lng: 77.0266 },
-        landmark: 'Near DLF Phase 1'
-      },
-      estimatedTime: '1-2 hours',
-      progress: 100
-    },
-    {
-      id: 'BK-004',
-      customer: {
-        name: 'Anita Devi',
-        phone: '+91 9876543213',
-        email: 'anita.devi@email.com'
-      },
-      service: 'Mobile Screen Repair',
-      issue: 'Cracked screen replacement for iPhone 12',
-      location: 'Karol Bagh, Delhi',
-      engineer: 'Pending Assignment',
-      status: 'pending',
-      priority: 'high',
-      bookingDate: '2024-01-15T11:45:00',
-      scheduledDate: '2024-01-16T15:00:00',
-      amount: '₹1,200',
-      customerLocation: {
-        address: 'Karol Bagh, Delhi',
-        coordinates: { lat: 28.6519, lng: 77.1909 },
-        landmark: 'Near Karol Bagh Metro Station'
-      },
-      estimatedTime: '1 hour',
-      progress: 0
-    },
-    {
-      id: 'BK-005',
-      customer: {
-        name: 'Manoj Sharma',
-        phone: '+91 9876543214',
-        email: 'manoj.sharma@email.com'
-      },
-      service: 'TV Repair',
-      issue: 'No display, power LED blinking',
-      location: 'Dwarka Sector 10, Delhi',
-      engineer: 'Pradeep Kumar',
-      status: 'cancelled',
-      priority: 'medium',
-      bookingDate: '2024-01-14T13:30:00',
-      scheduledDate: '2024-01-15T16:00:00',
-      amount: '₹2,000',
-      customerLocation: {
-        address: 'Dwarka Sector 10, Delhi',
-        coordinates: { lat: 28.5921, lng: 77.0460 },
-        landmark: 'Near Dwarka Sector 10 Metro'
-      },
-      estimatedTime: '2-3 hours',
-      progress: 0
-    }
-  ];
+  useEffect(() => {
+    dispatch(getAllBookings());
+  }, [dispatch]);
 
-  const getStatusBadge = (status: string) => {
-    const config = {
-      'pending': 'bg-amber-100 text-amber-800 border-amber-200',
-      'assigned': 'bg-blue-100 text-blue-800 border-blue-200',
-      'in-progress': 'bg-purple-100 text-purple-800 border-purple-200',
-      'completed': 'bg-green-100 text-green-800 border-green-200',
-      'cancelled': 'bg-red-100 text-red-800 border-red-200'
+  const getStatusBadge = (status: string): string => {
+    const config: Record<string, string> = {
+      'created': 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+      'paid': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300',
+      'failed': 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300',
+      'cancelled': 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
     };
-    return config[status as keyof typeof config] || config.pending;
+    return config[status] || config['created'];
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const config = {
-      'high': 'bg-red-100 text-red-800 border-red-200',
-      'medium': 'bg-amber-100 text-amber-800 border-amber-200',
-      'low': 'bg-gray-100 text-gray-800 border-gray-200'
+  const getOrderStatusBadge = (orderStatus: string): string => {
+    const config: Record<string, string> = {
+      'Upcoming': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
+      'In Progress': 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300',
+      'Completed': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300',
+      'Cancelled': 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300'
     };
-    return config[priority as keyof typeof config] || config.medium;
+    return config[orderStatus] || config['Upcoming'];
   };
 
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.service.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSearch = 
+      booking.customerDetails.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      booking.orderId.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      booking.servicePlan.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
+    
+    const matchesStatus = filters.status === 'all' || booking.status === filters.status;
+    const matchesOrderStatus = filters.orderStatus === 'all' || booking.orderStatus === filters.orderStatus;
+    
+    return matchesSearch && matchesStatus && matchesOrderStatus;
   });
+
+  const statusCounts = {
+    total: bookings.length,
+    upcoming: bookings.filter(b => b.orderStatus === 'Upcoming').length,
+    completed: bookings.filter(b => b.orderStatus === 'Completed').length,
+    cancelled: bookings.filter(b => b.orderStatus === 'Cancelled').length,
+  };
+
+  const totalRevenue = bookings
+    .filter(b => b.status === 'paid')
+    .reduce((sum, b) => sum + b.amount, 0);
+
+  const handleStatusChange = async (bookingId: string, newStatus: string): Promise<void> => {
+    try {
+      await dispatch(updateBookingStatus({ bookingId, status: newStatus })).unwrap();
+      showSuccessToast(`Booking status updated to ${newStatus} successfully!`);
+    } catch (err) {
+      showErrorToast(`Failed to update status: ${err}`);
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (dateString: string): string => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading && bookings.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -164,13 +104,19 @@ const Bookings = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-2">Track and manage all service bookings and assignments.</p>
       </div>
 
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Bookings</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{bookings.length}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{statusCounts.total}</p>
             </div>
             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
@@ -180,30 +126,20 @@ const Bookings = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-xl sm:text-2xl font-bold text-amber-600">{bookings.filter(b => b.status === 'pending').length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Upcoming</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{statusCounts.upcoming}</p>
             </div>
-            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-              <Clock className="w-4 h-4 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-xl sm:text-2xl font-bold text-purple-600">{bookings.filter(b => b.status === 'in-progress').length}</p>
-            </div>
-            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-              <Wrench className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+              <Clock className="w-4 h-4 text-blue-600" />
             </div>
           </div>
         </div>
+       
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-xl sm:text-2xl font-bold text-green-600">{bookings.filter(b => b.status === 'completed').length}</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{statusCounts.completed}</p>
             </div>
             <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <div className="w-4 h-4 bg-green-600 rounded-full"></div>
@@ -214,7 +150,7 @@ const Bookings = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">₹9,000</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">₹{totalRevenue.toLocaleString('en-IN')}</p>
             </div>
             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
@@ -233,34 +169,39 @@ const Bookings = () => {
                 type="text"
                 placeholder="Search by customer, booking ID, or service..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={filters.searchTerm}
+                onChange={(e) => dispatch(setSearchTerm(e.target.value))}
               />
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <select
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={filters.status}
+              onChange={(e) => dispatch(setStatusFilter(e.target.value))}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="assigned">Assigned</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
+              <option value="all">All Payment Status</option>
+              <option value="created">Created</option>
+              <option value="paid">Paid</option>
+              <option value="failed">Failed</option>
               <option value="cancelled">Cancelled</option>
             </select>
             <select
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              value={filters.orderStatus}
+              onChange={(e) => dispatch(setOrderStatusFilter(e.target.value))}
             >
-              <option value="all">All Dates</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
+              <option value="all">All Order Status</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
+            <button
+              onClick={() => dispatch(clearFilters())}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors"
+            >
+              Clear Filters
+            </button>
           </div>
         </div>
       </div>
@@ -271,88 +212,199 @@ const Bookings = () => {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Booking Details</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer & Location</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Booking ID</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Service</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engineer</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Booking Details</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order Status</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <td className="px-4 sm:px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.id}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(booking.bookingDate).toLocaleDateString()} at {new Date(booking.bookingDate).toLocaleTimeString()}
-                      </p>
-                      <div className="flex items-center mt-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getPriorityBadge(booking.priority)}`}>
-                          {booking.priority}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.customer.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{booking.customer.phone}</p>
-                      <div className="flex items-start mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p>{booking.customerLocation.address}</p>
-                          <p className="text-gray-400 dark:text-gray-500">{booking.customerLocation.landmark}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.service}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{booking.issue}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Est: {booking.estimatedTime}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" />
-                      <span className="text-sm text-gray-900 dark:text-white">{booking.engineer}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(booking.status)}`}>
-                      {booking.status.replace('-', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 max-w-[80px]">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${booking.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{booking.progress}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                    {booking.amount}
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors">
-                      <Eye className="w-4 h-4" />
-                    </button>
+              {filteredBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No bookings found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredBookings.map((booking) => (
+                  <tr key={booking._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <td className="px-4 sm:px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.orderId}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(booking.createdAt)}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatTime(booking.createdAt)}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                          <User className="w-3 h-3 mr-1" />
+                          {booking.customerDetails.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                          <Phone className="w-3 h-3 mr-1" />
+                          {booking.customerDetails.phone}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                          <Mail className="w-3 h-3 mr-1" />
+                          {booking.customerDetails.email}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.servicePlan.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{booking.servicePlan.category.name}</p>
+                        {booking.servicePlan.image && (
+                          <img src={booking.servicePlan.image} alt={booking.servicePlan.name} className="w-8 h-8 rounded mt-1 object-cover" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      {booking.bookingDetails ? (
+                        <div className="text-xs">
+                          <p className="flex items-center text-gray-900 dark:text-white">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {booking.bookingDetails.date}
+                          </p>
+                          <p className="flex items-center text-gray-600 dark:text-gray-400 mt-1">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {booking.bookingDetails.time}
+                          </p>
+                          <p className="flex items-start text-gray-500 dark:text-gray-400 mt-1">
+                            <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                            <span className="line-clamp-2">{booking.bookingDetails.address}</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Not scheduled</span>
+                      )}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <select
+                        value={booking.orderStatus}
+                        onChange={(e) => handleStatusChange(booking._id, e.target.value)}
+                        className={`text-xs font-semibold rounded-full border px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${getOrderStatusBadge(booking.orderStatus)}`}
+                      >
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                      ₹{booking.amount.toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button 
+                        onClick={() => setSelectedBooking(booking)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
+                        aria-label="View booking details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooking(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Booking Details</h2>
+                <button
+                  onClick={() => setSelectedBooking(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none"
+                  aria-label="Close modal"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Order Information</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Order ID: {selectedBooking.orderId}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Razorpay Order ID: {selectedBooking.razorpayOrderId}</p>
+                  {selectedBooking.razorpayPaymentId && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Payment ID: {selectedBooking.razorpayPaymentId}</p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Customer Details</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Name: {selectedBooking.customerDetails.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Email: {selectedBooking.customerDetails.email}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Phone: {selectedBooking.customerDetails.phone}</p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Service Details</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Service: {selectedBooking.servicePlan.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Category: {selectedBooking.servicePlan.category.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Base Amount: ₹{selectedBooking.servicePlan.price}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount: ₹{selectedBooking.amount}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Payment Status: 
+                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(selectedBooking.status)}`}>
+                      {selectedBooking.status}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Order Status: 
+                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getOrderStatusBadge(selectedBooking.orderStatus)}`}>
+                      {selectedBooking.orderStatus}
+                    </span>
+                  </p>
+                </div>
+
+                {selectedBooking.bookingDetails && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Appointment Details</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Date: {selectedBooking.bookingDetails.date}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Time: {selectedBooking.bookingDetails.time}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Address: {selectedBooking.bookingDetails.address}</p>
+                    
+                    {selectedBooking.bookingDetails.services && selectedBooking.bookingDetails.services.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">Services:</p>
+                        {selectedBooking.bookingDetails.services.map((service, idx) => (
+                          <p key={idx} className="text-sm text-gray-600 dark:text-gray-400">
+                            • {service.name} - ₹{service.price} x {service.quantity}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Timestamps</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Created: {formatDate(selectedBooking.createdAt)} at {formatTime(selectedBooking.createdAt)}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Updated: {formatDate(selectedBooking.updatedAt)} at {formatTime(selectedBooking.updatedAt)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

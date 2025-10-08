@@ -81,16 +81,38 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
         <div className="mb-4">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Features</p>
-          <div className="flex flex-wrap gap-1">
-            {service.features.slice(0, 3).map((feature, index) => (
-              <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md">
-                {feature.length > 30 ? `${feature.substring(0, 30)}...` : feature}
-              </span>
-            ))}
+          <div className="space-y-1">
+            {service.features.slice(0, 3).map((feature, index) => {
+              // Parse the feature if it's a JSON string, otherwise use as is
+              let parsedFeature = feature;
+              try {
+                if (typeof feature === 'string' && feature.startsWith('[') && feature.endsWith(']')) {
+                  const parsed = JSON.parse(feature);
+                  if (Array.isArray(parsed)) {
+                    parsedFeature = parsed[0]; // Take the first item from the array
+                  }
+                }
+              } catch (e) {
+                // If parsing fails, use the original feature
+                parsedFeature = feature;
+              }
+              
+              return (
+                <div key={index} className="flex items-start">
+                  <span className="text-blue-600 dark:text-blue-400 mr-2 mt-0.5">•</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {parsedFeature.length > 50 ? `${parsedFeature.substring(0, 50)}...` : parsedFeature}
+                  </span>
+                </div>
+              );
+            })}
             {service.features.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md">
-                +{service.features.length - 3} more
-              </span>
+              <div className="flex items-start">
+                <span className="text-gray-400 dark:text-gray-500 mr-2 mt-0.5">•</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  +{service.features.length - 3} more features
+                </span>
+              </div>
             )}
           </div>
         </div>
