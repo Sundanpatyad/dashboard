@@ -1,25 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Eye, MapPin, Clock, User, Calendar, Phone, Mail } from 'lucide-react';
+import { Search, Eye, MapPin, Clock, User, Calendar, Phone, Mail, UserPlus, CheckCircle } from 'lucide-react';
 import { 
   getAllBookings, 
   updateBookingStatus,
+  assignEngineerToBooking,
+  unassignEngineerFromBooking,
   setStatusFilter,
   setOrderStatusFilter,
   setSearchTerm,
   clearFilters,
   Booking 
 } from '../redux/slices/bookingSlice';
+import { 
+  getAllEngineers, 
+  Engineer 
+} from '../redux/slices/engineerSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const Bookings: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { bookings, loading, error, filters } = useSelector((state: RootState) => state.bookings);
+  const { bookings, loading, error, filters, actionLoading } = useSelector((state: RootState) => state.bookings);
+  const { engineers } = useSelector((state: RootState) => state.engineers);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState<boolean>(false);
+  const [selectedBookingForAssign, setSelectedBookingForAssign] = useState<Booking | null>(null);
 
   useEffect(() => {
     dispatch(getAllBookings());
+    dispatch(getAllEngineers());
   }, [dispatch]);
 
   const getStatusBadge = (status: string): string => {
@@ -46,7 +56,7 @@ const Bookings: React.FC = () => {
     const matchesSearch = 
       booking.customerDetails.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       booking.orderId.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      booking.servicePlan.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
+      getServicePlanName(booking).toLowerCase().includes(filters.searchTerm.toLowerCase());
     
     const matchesStatus = filters.status === 'all' || booking.status === filters.status;
     const matchesOrderStatus = filters.orderStatus === 'all' || booking.orderStatus === filters.orderStatus;
@@ -72,6 +82,66 @@ const Bookings: React.FC = () => {
     } catch (err) {
       showErrorToast(`Failed to update status: ${err}`);
     }
+  };
+
+  const handleAssignEngineer = (booking: Booking): void => {
+    setSelectedBookingForAssign(booking);
+    setShowAssignModal(true);
+  };
+
+  const handleCloseAssignModal = (): void => {
+    setShowAssignModal(false);
+    setSelectedBookingForAssign(null);
+  };
+
+  const handleAssignEngineerToBooking = async (engineerId: string): Promise<void> => {
+    if (!selectedBookingForAssign) return;
+    
+    try {
+      await dispatch(assignEngineerToBooking({ 
+        orderId: selectedBookingForAssign._id, 
+        engineerId 
+      })).unwrap();
+      showSuccessToast('Engineer assigned to booking successfully!');
+      handleCloseAssignModal();
+    } catch (err) {
+      showErrorToast(`Failed to assign engineer: ${err}`);
+    }
+  };
+
+  const handleUnassignEngineer = async (booking: Booking): Promise<void> => {
+    try {
+      await dispatch(unassignEngineerFromBooking(booking._id)).unwrap();
+      showSuccessToast('Engineer unassigned from booking successfully!');
+    } catch (err) {
+      showErrorToast(`Failed to unassign engineer: ${err}`);
+    }
+  };
+
+  const getAssignedEngineer = (booking: Booking): Engineer | null => {
+    if (!booking.assignedEngineer) return null;
+    return engineers.find(eng => eng._id === booking.assignedEngineer) || null;
+  };
+
+  const getServicePlanName = (booking: Booking): string => {
+    if (typeof booking.servicePlan === 'string') {
+      return booking.notes.servicePlanName || 'Service Plan';
+    }
+    return booking.servicePlan.name;
+  };
+
+  const getServicePlanCategory = (booking: Booking): string => {
+    if (typeof booking.servicePlan === 'string') {
+      return 'Category'; // Fallback when servicePlan is not populated
+    }
+    return booking.servicePlan.category.name;
+  };
+
+  const getServicePlanImage = (booking: Booking): string | null => {
+    if (typeof booking.servicePlan === 'string') {
+      return null; // No image when servicePlan is not populated
+    }
+    return booking.servicePlan.image || null;
   };
 
   const formatDate = (dateString: string): string => {
@@ -216,6 +286,7 @@ const Bookings: React.FC = () => {
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Service</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Booking Details</th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engineer</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order Status</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
@@ -225,7 +296,7 @@ const Bookings: React.FC = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No bookings found
                   </td>
                 </tr>
@@ -261,10 +332,10 @@ const Bookings: React.FC = () => {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{booking.servicePlan.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{booking.servicePlan.category.name}</p>
-                        {booking.servicePlan.image && (
-                          <img src={booking.servicePlan.image} alt={booking.servicePlan.name} className="w-8 h-8 rounded mt-1 object-cover" />
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{getServicePlanName(booking)}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{getServicePlanCategory(booking)}</p>
+                        {getServicePlanImage(booking) && (
+                          <img src={getServicePlanImage(booking)!} alt={getServicePlanName(booking)} className="w-8 h-8 rounded mt-1 object-cover" />
                         )}
                       </div>
                     </td>
@@ -286,6 +357,59 @@ const Bookings: React.FC = () => {
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400 dark:text-gray-500">Not scheduled</span>
+                      )}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      {getAssignedEngineer(booking) ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                              {getAssignedEngineer(booking)?.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {getAssignedEngineer(booking)?.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                {getAssignedEngineer(booking)?.phone}
+                              </p>
+                              {getAssignedEngineer(booking)?.isVerified && (
+                                <div className="flex items-center mt-1">
+                                  <CheckCircle className="w-3 h-3 text-green-600 mr-1" />
+                                  <span className="text-xs text-green-600 dark:text-green-400">Verified</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {getAssignedEngineer(booking)?.skills?.slice(0, 2).map((skill, index) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-xs rounded">
+                                {skill}
+                              </span>
+                            ))}
+                            {(getAssignedEngineer(booking)?.skills?.length || 0) > 2 && (
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">
+                                +{(getAssignedEngineer(booking)?.skills?.length || 0) - 2}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleUnassignEngineer(booking)}
+                            disabled={actionLoading[`unassign-${booking._id}`]}
+                            className="w-full flex items-center justify-center px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading[`unassign-${booking._id}`] ? 'Unassigning...' : 'Unassign'}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleAssignEngineer(booking)}
+                          disabled={actionLoading[`assign-${booking._id}`]}
+                          className="flex items-center px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {actionLoading[`assign-${booking._id}`] ? 'Assigning...' : 'Assign Engineer'}
+                        </button>
                       )}
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
@@ -359,9 +483,11 @@ const Bookings: React.FC = () => {
 
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Service Details</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Service: {selectedBooking.servicePlan.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Category: {selectedBooking.servicePlan.category.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Base Amount: ₹{selectedBooking.servicePlan.price}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Service: {getServicePlanName(selectedBooking)}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Category: {getServicePlanCategory(selectedBooking)}</p>
+                  {typeof selectedBooking.servicePlan === 'object' && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Base Amount: ₹{selectedBooking.servicePlan.price}</p>
+                  )}
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount: ₹{selectedBooking.amount}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Payment Status: 
                     <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(selectedBooking.status)}`}>
@@ -399,6 +525,81 @@ const Bookings: React.FC = () => {
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Timestamps</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Created: {formatDate(selectedBooking.createdAt)} at {formatTime(selectedBooking.createdAt)}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Updated: {formatDate(selectedBooking.updatedAt)} at {formatTime(selectedBooking.updatedAt)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Engineer Assignment Modal */}
+      {showAssignModal && selectedBookingForAssign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleCloseAssignModal}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Assign Engineer</h2>
+                <button
+                  onClick={handleCloseAssignModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none"
+                  aria-label="Close modal"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Booking Details</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Order ID: {selectedBookingForAssign.orderId}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Customer: {selectedBookingForAssign.customerDetails.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Service: {getServicePlanName(selectedBookingForAssign)}</p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Available Engineers</h3>
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {engineers.filter(eng => eng.isAvailable && eng.isActive && !eng.isBlocked && !eng.isSuspended).map((engineer) => (
+                    <div 
+                      key={engineer._id} 
+                      className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => handleAssignEngineerToBooking(engineer._id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                          {engineer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{engineer.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{engineer.phone}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {engineer.skills.slice(0, 2).map((skill, index) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-xs rounded">
+                                {skill}
+                              </span>
+                            ))}
+                            {engineer.skills.length > 2 && (
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">
+                                +{engineer.skills.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {engineer.isVerified && (
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        )}
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {engineer.assignedOrders.length} orders
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {engineers.filter(eng => eng.isAvailable && eng.isActive && !eng.isBlocked && !eng.isSuspended).length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 dark:text-gray-400">No available engineers found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import servicesReducer from './slices/servicesSlice';
 import authReducer from './slices/authSlice';
 import bookingsReducer from './slices/bookingSlice';
+import engineerReducer from './slices/engineerSlice';
 
 // Persist configuration
 const persistConfig = {
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   services: servicesReducer,
   auth: authReducer,
   bookings: bookingsReducer,
+  engineers: engineerReducer,
 });
 
 // Create persisted reducer

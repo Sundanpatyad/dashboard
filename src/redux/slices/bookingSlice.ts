@@ -51,7 +51,7 @@ export interface Booking {
   _id: string;
   orderId: string;
   userId: string;
-  servicePlan: ServicePlan;
+  servicePlan: ServicePlan | string; // Can be either populated object or just ID
   amount: number;
   currency: string;
   status: 'created' | 'paid' | 'failed' | 'cancelled';
@@ -66,6 +66,7 @@ export interface Booking {
   bookingDetails?: BookingDetails;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  assignedEngineer?: string;
 }
 
 export interface BookingsResponse {
@@ -80,6 +81,7 @@ export interface BookingsState {
   loading: boolean;
   error: string | null;
   count: number;
+  actionLoading: { [key: string]: boolean };
   filters: {
     status: string;
     orderStatus: string;
@@ -93,6 +95,7 @@ const initialState: BookingsState = {
   loading: false,
   error: null,
   count: 0,
+  actionLoading: {},
   filters: {
     status: 'all',
     orderStatus: 'all',
@@ -134,6 +137,32 @@ export const updateBookingStatus = createAsyncThunk(
       }
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update booking status');
+    }
+  }
+);
+
+export const assignEngineerToBooking = createAsyncThunk(
+  'bookings/assignEngineerToBooking',
+  async ({ orderId, engineerId }: { orderId: string; engineerId: string }, { rejectWithValue }) => {
+    try {
+      const response = await putData(`/api/engineer/assignEngineerToOrder/${orderId}`, { engineerId });
+      
+      return { orderId, engineerId, booking: response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to assign engineer to booking');
+    }
+  }
+);
+
+export const unassignEngineerFromBooking = createAsyncThunk(
+  'bookings/unassignEngineerFromBooking',
+  async (orderId: string, { rejectWithValue }) => {
+    try {
+      const response = await putData(`/api/engineer/unAssignEngineerFromOrder/${orderId}`, {});
+      
+      return { orderId, booking: response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to unassign engineer from booking');
     }
   }
 );
@@ -202,6 +231,44 @@ const bookingsSlice = createSlice({
       })
       .addCase(updateBookingStatus.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Assign engineer to booking
+    builder
+      .addCase(assignEngineerToBooking.pending, (state, action) => {
+        state.actionLoading[`assign-${action.meta.arg.orderId}`] = true;
+        state.error = null;
+      })
+      .addCase(assignEngineerToBooking.fulfilled, (state, action) => {
+        state.actionLoading[`assign-${action.meta.arg.orderId}`] = false;
+        const { orderId, engineerId } = action.payload;
+        const index = state.bookings.findIndex(b => b._id === orderId);
+        if (index !== -1) {
+          state.bookings[index] = { ...state.bookings[index], assignedEngineer: engineerId };
+        }
+      })
+      .addCase(assignEngineerToBooking.rejected, (state, action) => {
+        state.actionLoading[`assign-${action.meta.arg.orderId}`] = false;
+        state.error = action.payload as string;
+      });
+
+    // Unassign engineer from booking
+    builder
+      .addCase(unassignEngineerFromBooking.pending, (state, action) => {
+        state.actionLoading[`unassign-${action.meta.arg}`] = true;
+        state.error = null;
+      })
+      .addCase(unassignEngineerFromBooking.fulfilled, (state, action) => {
+        state.actionLoading[`unassign-${action.meta.arg}`] = false;
+        const { orderId } = action.payload;
+        const index = state.bookings.findIndex(b => b._id === orderId);
+        if (index !== -1) {
+          state.bookings[index] = { ...state.bookings[index], assignedEngineer: undefined };
+        }
+      })
+      .addCase(unassignEngineerFromBooking.rejected, (state, action) => {
+        state.actionLoading[`unassign-${action.meta.arg}`] = false;
         state.error = action.payload as string;
       });
   },
